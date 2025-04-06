@@ -6,7 +6,7 @@
       2️ Use these IDs to match Binding_Score_Sum in label_summary.csv
       3 Generate a new ordered_score_sum_labels.npy file for model training
 
-#Step 2
+# Step 2
 # train_dnn_sum.py
 
     1 Use the generated ordered_score_sum_labels.npy
