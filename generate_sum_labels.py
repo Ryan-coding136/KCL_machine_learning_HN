@@ -24,23 +24,23 @@ def match_labels(epi_ids, csv_path):
         if eid in df.index:
             score = df.loc[eid]["Binding_Score_Sum"]
             if isinstance(score, pd.Series):
-                score = score.iloc[0]  # 若重复只取第一条
+                score = score.iloc[0] 
             try:
                 matched.append(int(score))
             except Exception as e:
-                print(f"⚠️ 标签解析失败：{eid} → {score} ({e})")
+                print(f"⚠️ Failed to parse the tag：{eid} → {score} ({e})")
                 missing.append(eid)
         else:
             missing.append(eid)
 
-    print(f"✅ 匹配成功：{len(matched)} 条标签")
-    print(f"❗ 未匹配：{len(missing)} 条 ID")
+    print(f"✅ Successfully matched：{len(matched)} ")
+    print(f"❗ Failed to match：{len(missing)} ")
 
     return np.array(matched), missing
 
 def save_labels(labels, output_file="ordered_score_sum_labels.npy"):
     np.save(output_file, labels)
-    print(f"💾 标签已保存为 {output_file}")
+    print(f"💾 Label saved as {output_file}")
 
 if __name__ == "__main__":
     fasta_folder = "split1"
@@ -53,4 +53,4 @@ if __name__ == "__main__":
     if missing:
         with open("missing_ids_score_sum.txt", "w") as f:
             f.write("\n".join(missing))
-        print("📄 未匹配 ID 已保存为 missing_ids_score_sum.txt")
+        print("📄 The unmatched ID is saved as missing_ids_score_sum.txt")
