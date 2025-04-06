@@ -7,7 +7,7 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 
-# =================== 内存优化版 Dataset（用于回归） ===================
+# ======================================
 class EfficientESM2SumRegressionDataset(Dataset):
     def __init__(self, embedding_folder, label_path):
         self.embedding_files = sorted(glob.glob(f"{embedding_folder}/split_*_embeddings.npy"))
@@ -17,7 +17,7 @@ class EfficientESM2SumRegressionDataset(Dataset):
 
         self.labels = np.load(label_path)
         assert self.total_samples == len(self.labels), \
-            f"嵌入总数 {self.total_samples} 与标签数 {len(self.labels)} 不一致！"
+            f"The total number of embeddings {self.total_samples} does not match the number of labels {len(self.labels)}！"
 
     def __len__(self):
         return self.total_samples
@@ -29,9 +29,9 @@ class EfficientESM2SumRegressionDataset(Dataset):
                 x = np.load(self.embedding_files[file_idx], mmap_mode='r')[local_idx]
                 y = self.labels[idx]
                 return torch.tensor(x, dtype=torch.float32), torch.tensor(y, dtype=torch.float32)
-        raise IndexError("索引超出范围")
+        raise IndexError("The index is out of range")
 
-# =================== DNN 回归模型定义 ===================
+# =================== DNN Regression Model Definition ===================
 class DNNRegressionModel(nn.Module):
     def __init__(self, input_dim=1280, hidden_dim=512):
         super(DNNRegressionModel, self).__init__()
@@ -39,14 +39,14 @@ class DNNRegressionModel(nn.Module):
             nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
             nn.Dropout(0.3),
-            nn.Linear(hidden_dim, 1)  # 输出为一个连续值
+            nn.Linear(hidden_dim, 1) 
         )
 
     def forward(self, x):
         x = x.mean(dim=1)
         return self.net(x).squeeze(-1)
 
-# =================== 验证集评估函数 ===================
+# =================== Validation set evaluation function ===================
 def evaluate(model, dataloader, criterion, device):
     model.eval()
     total_loss = 0
@@ -61,7 +61,7 @@ def evaluate(model, dataloader, criterion, device):
             trues.extend(y.cpu().numpy())
     return total_loss / len(dataloader), preds, trues
 
-# =================== 训练主函数 ===================
+# =================== Train the main function ===================
 def train():
     dataset = EfficientESM2SumRegressionDataset(
         embedding_folder="split1",
@@ -113,18 +113,18 @@ def train():
             best_val_loss = val_loss
             torch.save(model.state_dict(), "best_dnn_model_sum.pth")
             patience_counter = 0
-            print(f"✅ 新最佳模型已保存（Val Loss: {val_loss:.4f}）")
+            print(f"✅ The new best model has been saved（Val Loss: {val_loss:.4f}）")
         else:
             patience_counter += 1
             if patience_counter >= EARLY_STOPPING_PATIENCE:
-                print("🛑 Early stopping 触发，训练终止。")
+                print("🛑 Early stopping")
                 break
 
-    # 保存日志
-    pd.DataFrame(log_data).to_csv("training_log_sum.csv", index=False)
-    print("📄 日志已保存为 training_log_sum.csv")
 
-    # 绘制曲线
+    pd.DataFrame(log_data).to_csv("training_log_sum.csv", index=False)
+    print("📄 Log saved as training_log_sum.csv")
+
+   
     plt.plot(train_losses, label="Train Loss")
     plt.plot(val_losses, label="Val Loss")
     plt.xlabel("Epoch")
@@ -133,7 +133,7 @@ def train():
     plt.legend()
     plt.tight_layout()
     plt.savefig("training_curves_sum.png")
-    print("📈 曲线图已保存为 training_curves_sum.png")
+    print("📈 Curve saved as training_curves_sum.png")
 
 if __name__ == "__main__":
     train()
