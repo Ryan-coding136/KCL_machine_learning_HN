@@ -1,4 +1,6 @@
-#Project Workflow: Predicting Binding Affinity Using ESM-2 Embeddings and Structural Features
+Project Workflow: Predicting Binding Affinity Using ESM-2 Embeddings and Structural Features
+
+⸻
 
 Stage 1: Data Preparation
 
@@ -14,61 +16,74 @@ Stage 1: Data Preparation
 	•	Output labels:
 	•	Binding scores (0/1/2): y_binding_score.npy
 	•	Structural proxy features:
-	•	Average RSA + Distance across 5 representative PDBs: X_structural_features.npy (8 dimensions)
+	•	Average RSA + Distance values for selected RBS residues, extracted from five representative H1 PDB structures
+	•	Output: X_structural_features.npy (8 dimensions: 4 positions × 2 features each)
 	•	Host type feature:
-	•	Human = 0, Others = 1: X_host_label.npy
+	•	From matched metadata: X_host_label.npy (Human = 0, Non-human = 1)
 
 ⸻
 
-Stage 2: Model Building and Training
+Stage 2: Binding Score Classification Criteria
+
+Definition of Three Binding Classes
+
+Each sequence was associated with four key receptor-binding residues in the HA RBS (positions 187, 222, 223, and 225), selected based on known functional importance (literature: Q226L, G228S, D225G, etc.).
+	•	For each sequence, these 4 positions were analyzed for amino acid mutations compared to the dominant “avian” residue.
+	•	A mutation was counted as “adaptive” if it changed to a residue associated with enhanced human binding (e.g., Q226L, D225G, S227R, etc.).
+	•	The total number of such mutations among the 4 key sites determined the binding score:
+
+Mutation Count	Binding Score	Description
+0 mutations	     0	        Weak binding
+1–2 mutations	     1	        Moderate binding
+3–4 mutations	     2	        Strong binding
+
+	•	These scores were assigned programmatically and saved in y_binding_score.npy.
+
+⸻
+
+Stage 3: Model Building and Training
 
 1. Model Architecture
-	•	Input feature dimensions: 320 (ESM-2) + 8 (structure) + 1 (host) = 329
-	•	MLP architecture example: 320 → 64 → 32 → 3
-	•	The training script supports:
+	•	Input dimensions: 320 (ESM-2) + 8 (structure) + 1 (host) = 329
+	•	Example MLP: 320 → 64 → 32 → 3 (3-way classification)
+	•	Training script supports:
 	•	Class weighting
-	•	Early stopping
-	•	Plotting for loss and ROC curves
+	•	EarlyStopping
+	•	Loss and ROC curve plotting
 
 2. Training and Evaluation
-	•	Multiple training sessions were conducted with different class weight settings:
-	•	train_model_weighted.py (balanced weights)
-	•	train_model_weighted_soft.py (soft adjustment)
-	•	Each training run generates:
-	•	Confusion matrix: confusion_matrix.png
-	•	ROC curve: roc_curve.png
-	•	Loss curve: loss_curve.png
-	•	Control variables:
-	•	Fixed network architecture
-	•	Consistent train-validation split
+	•	Training experiments with different class weighting strategies:
+	•	train_model_weighted.py: class-balanced weights
+	•	train_model_weighted_soft.py: softly adjusted weights
+	•	Evaluation metrics:
+	•	Accuracy, ROC AUC, confusion matrix
 
 ⸻
 
-Stage 3: Results Comparison and Analysis
+Stage 4: Results Analysis
 
-1. Performance Metrics
-	•	Validation accuracy
-	•	ROC AUC scores per class
-	•	Class distribution vs prediction accuracy
+1. Key Metrics
+	•	Evaluation curves:
+	•	Confusion matrix
+	•	ROC curves per class (One-vs-Rest)
+	•	Training/validation loss curves
 
-2. Effect of Class Weights
-	•	Compared results from:
-	•	No weighting
-	•	Hard class weighting
-	•	Soft class weighting
-	•	Insight:
-	•	Weighting improves minority class performance (especially Class 0/1)
+2. Class Weight Impact
+	•	First-round models had poor minority-class recall
+	•	Second-round training with adjusted weights significantly improved Class 0/1 performance
 
-3. Misclassification Analysis
-	•	Reasons for poor performance:
-	•	Class imbalance still influences prediction
-	•	May require more diverse mutation samples in minority classes
+3. Class Distribution (Example)
+	•	Label distribution: Class 2 (strong binders) dominates due to high prevalence of zoonotic mutations in avian sequences
+
+4. Misclassification Insight
+	•	Sequences misclassified as “strong” may carry non-RBS adaptive mutations, suggesting additional signals beyond the four key residues
 
 ⸻
 
-Stage 4: Future Work
-	•	Explore higher-dimensional ESM-2 embeddings (e.g., 640 dimensions)
-	•	Expand model architecture with more hidden layers or regularization (e.g., Dropout)
-	•	Add amino acid physicochemical features
-	•	Investigate if misclassified samples have mutations outside the RBS
-	•	Apply trained model to H5/H7/H9 data for validation and generalization
+Stage 5: Future Work
+	•	Increase ESM-2 embedding dimensionality (e.g., 640)
+	•	Add dropout, batch norm, or deeper layers
+	•	Integrate full-length HA domain-aware features (e.g., glycosylation)
+	•	Train on H1/H3, test on H5/H7/H9
+	•	Apply explainability (e.g., SHAP) to identify key residues
+	•	Publish a scoring interface for outbreak monitoring
